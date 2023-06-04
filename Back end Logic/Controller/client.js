@@ -8,8 +8,8 @@ const mongoose = require('mongoose')
 const createClient = async (req, res, next) => {
   //Nationality, pc number or ID ; number of person, a kid
   //
-  const { firstName, lastName, phoneNumber, email } = req.body
-  const client = new Client({ firstName, lastName, phoneNumber, email })
+  // const { firstName, lastName, phoneNumber, email } = req.body
+  const client = new Client(req.body)
   await client.save()
   return res
     .status(StatusCodes.CREATED)

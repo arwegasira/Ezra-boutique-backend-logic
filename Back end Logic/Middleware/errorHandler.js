@@ -13,7 +13,7 @@ const errorHandlerMiddleware = (err, req, res, next) => {
   }
   if (err.name === 'ValidationError') {
     customError.message = Object.values(err.errors)
-      .map((item) => `${item.properties.path} ${item.properties.type}`)
+      .map((item) => item.message)
       .join(', ')
     customError.statusCode = StatusCodes.BAD_REQUEST
   }
