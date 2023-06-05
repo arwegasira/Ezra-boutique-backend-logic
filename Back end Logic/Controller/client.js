@@ -6,14 +6,16 @@ const moment = require('moment')
 const mongoose = require('mongoose')
 
 const createClient = async (req, res, next) => {
-  //Nationality, pc number or ID ; number of person, a kid
-  //
   // const { firstName, lastName, phoneNumber, email } = req.body
   const client = new Client(req.body)
   await client.save()
   return res
     .status(StatusCodes.CREATED)
     .json({ msg: 'Client successfully created', client: client })
+}
+const backtoClientHome = async (req, res, next) => {
+  const clients = await Client.find().sort('-createdAt').limit(3)
+  res.status(StatusCodes.OK).json({ clients: clients })
 }
 
 const getActiveClients = async (req, res, next) => {
@@ -303,4 +305,5 @@ module.exports = {
   getAllClients,
   addservice,
   editService,
+  backtoClientHome,
 }

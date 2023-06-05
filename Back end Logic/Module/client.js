@@ -17,7 +17,6 @@ const clientShema = new Schema(
     phoneNumber: {
       type: String,
       required: [true, 'Phone number is required'],
-      unique: true,
     },
     dob: {
       type: Date,
@@ -27,7 +26,6 @@ const clientShema = new Schema(
     },
     email: {
       type: String,
-      unique: true,
     },
     // id number and nationality not sure if needed
     idNumber: {
