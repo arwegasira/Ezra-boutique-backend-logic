@@ -8,6 +8,7 @@ const {
   addservice,
   editService,
   backtoClientHome,
+  getClients,
 } = require('../Controller/client')
 
 router.post('/addclient', createClient)
@@ -16,5 +17,6 @@ router.get('/active', getActiveClients)
 router.get('/backhome', backtoClientHome)
 router.post('/addservice/:id', addservice)
 router.post('/editservice', editService)
+router.get('/clients', getClients)
 
 module.exports = router

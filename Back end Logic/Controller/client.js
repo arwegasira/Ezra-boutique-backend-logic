@@ -29,6 +29,43 @@ const getAllClients = async (req, res, next) => {
     .status(StatusCodes.OK)
     .json({ msg: 'Sucess', clients: clients, count: count })
 }
+
+const getClients = async (req, res, next) => {
+  const { arrivalDate, email, firstName, lastName, phoneNumber, idNumber } =
+    req.query
+  let searchObj = {}
+  if (email) searchObj.email = email
+
+  if (firstName) {
+    let regex = new RegExp('^' + firstName)
+    searchObj.firstName = { $regex: regex, $options: 'i' }
+  }
+
+  if (lastName) {
+    let regex = new RegExp('^' + lastName)
+    searchObj.firstName = { $regex: regex, $options: 'i' }
+  }
+
+  if (phoneNumber) searchObj.phoneNumber = phoneNumber
+
+  if (idNumber) searchObj.idNumber = idNumber
+
+  const page = Number(req.query.page) || 1
+  const limit = Number(req.query.limit) || 10
+  const skip = (page - 1) * limit
+
+  console.log(searchObj)
+  let result = Client.find(searchObj).sort('-createdAt').skip(skip).limit(limit)
+  const clients = await result
+  const totalClients = await Client.countDocuments(searchObj)
+  const numofPages = Math.ceil(totalClients / limit)
+  res.status(StatusCodes.OK).json({
+    msg: 'sucess',
+    clients: clients,
+    numofPages: numofPages,
+    totalClients: totalClients,
+  })
+}
 const addservice = async (req, res, next) => {
   let {
     params: { id: clientId },
@@ -306,4 +343,5 @@ module.exports = {
   addservice,
   editService,
   backtoClientHome,
+  getClients,
 }
