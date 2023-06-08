@@ -54,7 +54,6 @@ const getClients = async (req, res, next) => {
   const limit = Number(req.query.limit) || 10
   const skip = (page - 1) * limit
 
-  console.log(searchObj)
   let result = Client.find(searchObj).sort('-createdAt').skip(skip).limit(limit)
   const clients = await result
   const totalClients = await Client.countDocuments(searchObj)
