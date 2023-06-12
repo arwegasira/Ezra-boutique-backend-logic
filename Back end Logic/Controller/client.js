@@ -27,7 +27,7 @@ const getAllClients = async (req, res, next) => {
   const count = await Client.countDocuments()
   return res
     .status(StatusCodes.OK)
-    .json({ msg: 'Sucess', clients: clients, count: count })
+    .json({ msg: 'Success', clients: clients, count: count })
 }
 
 const getClients = async (req, res, next) => {
@@ -56,6 +56,11 @@ const getClients = async (req, res, next) => {
 
   let result = Client.find(searchObj).sort('-createdAt').skip(skip).limit(limit)
   const clients = await result
+
+  if (!clients) {
+    return new customError.NotFoundError('No client(s) found')
+  }
+
   const totalClients = await Client.countDocuments(searchObj)
   const numofPages = Math.ceil(totalClients / limit)
   res.status(StatusCodes.OK).json({
