@@ -396,13 +396,14 @@ const addAccommodation = async (req, res, next) => {
 }
 const editAccommodation = async (req, res, next) => {
   let { roomName, price, startDate, endDate, clientId } = req.body
-  const newAccommodation = {}
   let newRoom
   let oldRoom
   //fetch client
   const client = await Client.findOne({ _id: clientId })
   if (!client) throw new customError.NotFoundError('Client not found')
   const activeAccommodation = client.activeAccommodation[0]
+  if (!activeAccommodation)
+    throw new customError.BadrequestError('Add accommodation first')
   //check if it's a new room
   if (activeAccommodation.roomDetails.name !== roomName) {
     // check if new room is available
@@ -437,7 +438,9 @@ const editAccommodation = async (req, res, next) => {
       ? endDate
       : activeAccommodation.endDate
   }
-  if (price) activeAccommodation.unitPrice = price
+  if (price) {
+    activeAccommodation.unitPrice = price
+  }
 
   const nights =
     activeAccommodation.endDate - activeAccommodation.startDate === 0
@@ -447,6 +450,8 @@ const editAccommodation = async (req, res, next) => {
         1
   const totalCost = activeAccommodation.unitPrice * nights
   activeAccommodation.totalCost = totalCost
+  client.activeAccommodation.splice(0, 1, activeAccommodation)
+
   if (oldRoom) {
     oldRoom.status = 'Available'
     oldRoom.accupationEnd = ''
@@ -460,13 +465,15 @@ const editAccommodation = async (req, res, next) => {
   //save changes in transaction
   const session = await mongoose.startSession()
   session.startTransaction()
+
   if (oldRoom) await oldRoom.save({ session })
   if (newRoom) await newRoom.save({ session })
   await client.save({ session })
+
   await session.commitTransaction()
   await session.endSession()
 
-  res.status(StatusCodes.OK).json({ activeAccommodation, oldRoom, newRoom })
+  res.status(StatusCodes.OK).json({ msg: 'success' })
 }
 module.exports = {
   createClient,
