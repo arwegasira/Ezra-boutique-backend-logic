@@ -340,6 +340,134 @@ const editService = async (req, res, next) => {
     .json({ msg: 'Sucessfully updated', client: client })
 }
 
+const addAccommodation = async (req, res, next) => {
+  let { clientId, startDate, endDate, roomName, price } = req.body
+  const accommodationObj = {}
+  //check if required params are present
+  if (!clientId || !startDate || !endDate || !roomName)
+    throw new customError.BadrequestError('Please provide room and dates ')
+  // need to check if client exist
+  const client = await Client.findOne({ _id: clientId })
+  if (!client) throw new customError.NotFoundError('Client not found')
+  //need to check if room is not occupied
+  const room = await Room.findOne({
+    name: roomName,
+    status: 'Available',
+  }).select('-status -accupationEnd -accupationStart -__v')
+  if (!room) throw new customError.NotFoundError('Room not found')
+
+  //check if startDate > endDate
+  startDate = moment(startDate, 'DD/MM/YYYY').toDate()
+  endDate = moment(endDate, 'DD/MM/YYYY').toDate()
+
+  if (startDate > endDate)
+    throw new customError.BadrequestError(
+      'Accomodation end date should be greater than start date.'
+    )
+  const nights =
+    endDate - startDate === 0
+      ? 1
+      : (endDate - startDate) / (3600 * 1000 * 24) + 1
+  const totalCost = nights * (price || room.price)
+  //Build accommodation Object
+  accommodationObj.startDate = startDate
+  accommodationObj.endDate = endDate
+  accommodationObj.roomDetails = room
+  accommodationObj.unitPrice = price || room.price
+  accommodationObj.totalCost = totalCost
+  accommodationObj.accommodationId = new mongoose.Types.ObjectId()
+
+  //update client accommodation array and update room status
+  client.activeAccommodation.push(accommodationObj)
+  room.status = 'Occupied'
+  room.accupationEnd = endDate
+  room.accupationStart = startDate
+
+  const session = await mongoose.startSession()
+
+  session.startTransaction()
+  await client.save({ session })
+  await room.save({ session })
+
+  await session.commitTransaction()
+  session.endSession()
+
+  res.status(StatusCodes.OK).json({ msg: 'Accomodation added successfully' })
+}
+const editAccommodation = async (req, res, next) => {
+  let { roomName, price, startDate, endDate, clientId } = req.body
+  const newAccommodation = {}
+  let newRoom
+  let oldRoom
+  //fetch client
+  const client = await Client.findOne({ _id: clientId })
+  if (!client) throw new customError.NotFoundError('Client not found')
+  const activeAccommodation = client.activeAccommodation[0]
+  //check if it's a new room
+  if (activeAccommodation.roomDetails.name !== roomName) {
+    // check if new room is available
+    newRoom = await Room.findOne({
+      name: roomName,
+      status: 'Available',
+    }).select('-status -accupationEnd -accupationStart -__v')
+
+    if (!newRoom) throw new customError.BadrequestError('Room not available')
+    oldRoom = await Room.findOne({ name: activeAccommodation.roomDetails.name })
+    if (!oldRoom)
+      throw new customError.BadrequestError('Something went wrong try again')
+    activeAccommodation.roomDetails = newRoom
+    activeAccommodation.unitPrice = newRoom?.price
+  }
+  //check if startDate > endDate
+  startDate = startDate ? moment(startDate, 'DD/MM/YYYY').toDate() : ''
+  endDate = endDate ? moment(endDate, 'DD/MM/YYYY').toDate() : ''
+
+  if (startDate > endDate)
+    throw new customError.BadrequestError(
+      'Accomodation end date should be greater than start date.'
+    )
+  if (
+    activeAccommodation.startDate !== startDate ||
+    activeAccommodation.endDate !== endDate
+  ) {
+    activeAccommodation.startDate = startDate
+      ? startDate
+      : activeAccommodation.startDate
+    activeAccommodation.endDate = endDate
+      ? endDate
+      : activeAccommodation.endDate
+  }
+  if (price) activeAccommodation.unitPrice = price
+
+  const nights =
+    activeAccommodation.endDate - activeAccommodation.startDate === 0
+      ? 1
+      : (activeAccommodation.endDate - activeAccommodation.startDate) /
+          (3600 * 1000 * 24) +
+        1
+  const totalCost = activeAccommodation.unitPrice * nights
+  activeAccommodation.totalCost = totalCost
+  if (oldRoom) {
+    oldRoom.status = 'Available'
+    oldRoom.accupationEnd = ''
+    oldRoom.accupationStart = ''
+  }
+  if (newRoom) {
+    newRoom.status = 'Occupied'
+    newRoom.accupationEnd = activeAccommodation.endDate
+    newRoom.accupationStart = activeAccommodation.startDate
+  }
+  //save changes in transaction
+  const session = await mongoose.startSession()
+  session.startTransaction()
+  if (oldRoom) await oldRoom.save({ session })
+  if (newRoom) await newRoom.save({ session })
+  await client.save({ session })
+  await session.commitTransaction()
+  await session.endSession()
+
+  res.status(StatusCodes.OK).json({ activeAccommodation, oldRoom, newRoom })
+}
 module.exports = {
   createClient,
   getActiveClients,
@@ -348,4 +476,6 @@ module.exports = {
   editService,
   backtoClientHome,
   getClients,
+  addAccommodation,
+  editAccommodation,
 }

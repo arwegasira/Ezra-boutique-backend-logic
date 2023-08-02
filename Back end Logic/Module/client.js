@@ -50,6 +50,9 @@ const clientShema = new Schema(
     activeServices: {
       type: Array,
     },
+    activeAccommodation: {
+      type: Array,
+    },
     //address
     city: {
       type: String,
