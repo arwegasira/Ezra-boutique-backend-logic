@@ -29,7 +29,12 @@ const getAllClients = async (req, res, next) => {
     .status(StatusCodes.OK)
     .json({ msg: 'Success', clients: clients, count: count })
 }
-
+const getClientById = async (req, res, next) => {
+  const { id } = req.params
+  const client = await Client.findOne({ _id: id })
+  if (!client) throw new customError.NotFoundError('Client Not found.')
+  res.status(StatusCodes.OK).json({ msg: 'Ok', client })
+}
 const getClients = async (req, res, next) => {
   const { arrivalDate, email, firstName, lastName, phoneNumber, idNumber } =
     req.query
@@ -276,4 +281,5 @@ module.exports = {
   getClients,
   addAccommodation,
   editAccommodation,
+  getClientById,
 }
