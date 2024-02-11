@@ -13,6 +13,14 @@ const createClient = async (req, res, next) => {
     .status(StatusCodes.CREATED)
     .json({ msg: 'Client successfully created', client: client })
 }
+const editClientById = async (req, res, next) => {
+  const { id } = req.params
+  const client = await Client.findOneAndUpdate({ _id: id }, req.body, {
+    returnDocument: 'after',
+  })
+  if (!client) throw new customError.NotFoundError('client not found')
+  return res.status(StatusCodes.OK).json({ clients: client })
+}
 const backtoClientHome = async (req, res, next) => {
   const clients = await Client.find().sort('-createdAt').limit(3)
   res.status(StatusCodes.OK).json({ clients: clients })
@@ -282,4 +290,5 @@ module.exports = {
   addAccommodation,
   editAccommodation,
   getClientById,
+  editClientById,
 }
